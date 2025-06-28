@@ -95,11 +95,11 @@ def validate_csv_structure(df, required_columns, file_type):
     return True, f"{file_type} válido: {len(df)} registros"
 
 def sidebar_navigation():
-    """Navegación en sidebar"""
+    """REEMPLAZAR la función sidebar_navigation existente"""
     st.sidebar.title("🎯 Progol Engine")
     st.sidebar.markdown("### Control Central")
     
-    # Modo de operación
+    # Modo de operación - AGREGAR TEMPLATES
     mode = st.sidebar.selectbox(
         "🎮 Modo de Operación",
         [
@@ -108,6 +108,7 @@ def sidebar_navigation():
             "🎯 Optimización Rápida",
             "📈 Comparar Portafolios",
             "🔍 Explorar Resultados",
+            "📋 Templates de Archivos",  # ← NUEVA OPCIÓN
             "⚙️ Configuración"
         ]
     )
@@ -183,24 +184,26 @@ def check_step_completed(jornada, step):
     return False
 
 def get_available_jornadas():
-    """Obtener jornadas disponibles"""
+    """Obtener jornadas disponibles - VERSIÓN CORREGIDA"""
     jornadas = []
     
-    # Buscar en data/raw/ (archivos subidos)
+    # Buscar en data/raw/
     raw_dir = Path("data/raw")
     if raw_dir.exists():
-        for file in raw_dir.glob("Progol_*.csv"):
-            jornada = file.stem.split("_")[-1]
-            if jornada not in jornadas:
-                jornadas.append(jornada)
+        for file in raw_dir.glob("*.csv"):
+            try:
+                if 'progol' in file.name.lower():
+                    df_temp = pd.read_csv(file, nrows=1)
+                    if 'concurso_id' in df_temp.columns:
+                        jornada = str(int(df_temp['concurso_id'].iloc[0]))
+                        if jornada not in jornadas:
+                            jornadas.append(jornada)
+            except:
+                continue
     
-    # También buscar en data/processed/ (archivos procesados)
-    processed_dir = Path("data/processed")
-    if processed_dir.exists():
-        for file in processed_dir.glob("portfolio_final_*.csv"):
-            jornada = file.stem.split("_")[-1]
-            if jornada not in jornadas:
-                jornadas.append(jornada)
+    # Si no hay jornadas, agregar la por defecto
+    if not jornadas:
+        jornadas = ['2287']
     
     return sorted(jornadas, reverse=True)
 
@@ -1840,7 +1843,7 @@ def show_raw_data(jornada):
             st.info("📊 Ejecuta el pipeline para generar archivos procesados")
 
 def show_probabilities_analysis(jornada):
-    """Análisis de probabilidades"""
+    """Análisis de probabilidades - VERSIÓN CORREGIDA"""
     st.subheader(f"🎯 Análisis de Probabilidades - Jornada {jornada}")
     
     prob_file = f"data/processed/prob_draw_adjusted_{jornada}.csv"
@@ -1849,7 +1852,8 @@ def show_probabilities_analysis(jornada):
         # Buscar archivos alternativos
         alt_files = [
             "data/processed/prob_final.csv",
-            f"data/processed/prob_blend_{jornada}.csv"
+            f"data/processed/prob_blend_{jornada}.csv",
+            f"data/processed/prob_basic_{jornada}.csv"
         ]
         
         found_file = None
@@ -1863,152 +1867,154 @@ def show_probabilities_analysis(jornada):
             prob_file = found_file
         else:
             st.warning("⚠️ Archivo de probabilidades no encontrado. Ejecuta el pipeline primero.")
-            st.info("Archivos buscados:")
-            for f in [prob_file] + alt_files:
-                exists = "✅" if Path(f).exists() else "❌"
-                st.info(f"{exists} {f}")
             return
     
-    prob_df = pd.read_csv(prob_file)
-    
-    # Mostrar información básica del archivo
-    st.info(f"📄 Archivo cargado: {prob_file} ({len(prob_df)} partidos)")
-    st.info(f"📋 Columnas disponibles: {list(prob_df.columns)}")
-    
-    # Detectar formato de columnas
-    prob_cols = ['p_final_L', 'p_final_E', 'p_final_V']
-    if not all(col in prob_df.columns for col in prob_cols):
-        # Buscar formato alternativo
-        alt_formats = [
-            ['prob_L', 'prob_E', 'prob_V'],
-            ['p_L', 'p_E', 'p_V'],
-            ['L', 'E', 'V']
-        ]
+    try:
+        prob_df = pd.read_csv(prob_file)
         
-        for alt_cols in alt_formats:
-            if all(col in prob_df.columns for col in alt_cols):
-                prob_cols = alt_cols
-                break
-    
-    if all(col in prob_df.columns for col in prob_cols):
+        if len(prob_df) == 0:
+            st.warning("⚠️ Archivo de probabilidades vacío")
+            return
+        
+        st.success(f"✅ Probabilidades cargadas: {len(prob_df)} partidos")
+        
+        # Identificar columnas de probabilidades dinámicamente
+        prob_cols = []
+        for suffix in ['L', 'E', 'V']:
+            for prefix in ['p_final_', 'p_blend_', 'p_raw_', 'prob_']:
+                col_name = f"{prefix}{suffix}"
+                if col_name in prob_df.columns:
+                    prob_cols.append(col_name)
+                    break
+        
+        if len(prob_cols) < 3:
+            st.error("❌ No se encontraron columnas de probabilidades válidas")
+            st.info(f"Columnas disponibles: {list(prob_df.columns)}")
+            return
+        
+        # Asegurar que tenemos exactamente 3 columnas (L, E, V)
+        if len(prob_cols) > 3:
+            prob_cols = prob_cols[:3]
+        
         col1, col2 = st.columns(2)
         
         with col1:
-            st.subheader("📊 Datos de Probabilidades")
-            # Agregar análisis de calidad
-            prob_sums = prob_df[prob_cols].sum(axis=1)
-            avg_sum = prob_sums.mean()
+            st.markdown("### 📊 Estadísticas Básicas")
             
-            quality_metrics = {
-                'Suma promedio': f"{avg_sum:.3f}",
-                'Rango sumas': f"[{prob_sums.min():.3f}, {prob_sums.max():.3f}]",
-                'Partidos': len(prob_df)
-            }
+            # Crear estadísticas seguras
+            stats_data = []
+            for i, col in enumerate(prob_cols):
+                label = ['Local', 'Empate', 'Visitante'][i]
+                mean_val = prob_df[col].mean()
+                min_val = prob_df[col].min() 
+                max_val = prob_df[col].max()
+                
+                stats_data.append({
+                    'Resultado': label,
+                    'Promedio': f"{mean_val:.1%}",
+                    'Mínimo': f"{min_val:.1%}",
+                    'Máximo': f"{max_val:.1%}"
+                })
             
-            for metric, value in quality_metrics.items():
-                st.metric(metric, value)
+            stats_df = pd.DataFrame(stats_data)
+            st.dataframe(stats_df, use_container_width=True)
             
-            # Mostrar tabla con formato
+            # Mostrar tabla de probabilidades con formato seguro
             display_df = prob_df.copy()
-            for col in prob_cols:
-                display_df[f"{col}_pct"] = display_df[col].apply(lambda x: f"{x:.1%}")
             
-            display_cols = ['match_no'] + [f"{col}_pct" for col in prob_cols]
+            # Agregar columna de partido si no existe
+            if 'match_no' not in display_df.columns:
+                display_df['match_no'] = range(1, len(display_df) + 1)
+            
+            # Formatear probabilidades
+            for i, col in enumerate(prob_cols):
+                label = ['L', 'E', 'V'][i]
+                display_df[f"Prob_{label}"] = display_df[col].apply(lambda x: f"{x:.1%}")
+            
+            # Mostrar tabla
+            display_cols = ['match_no'] + [f"Prob_{label}" for label in ['L', 'E', 'V']]
             if all(col in display_df.columns for col in display_cols):
                 st.dataframe(display_df[display_cols], use_container_width=True)
+        
+        with col2:
+            st.markdown("### 📈 Distribución Visual")
+            
+            # Gráfico de distribución seguro
+            try:
+                fig = go.Figure()
+                
+                colors = ['#1f77b4', '#ff7f0e', '#2ca02c']
+                labels = ['Local', 'Empate', 'Visitante']
+                
+                for i, (col, label, color) in enumerate(zip(prob_cols, labels, colors)):
+                    if col in prob_df.columns:
+                        fig.add_trace(go.Box(
+                            y=prob_df[col], 
+                            name=label,
+                            marker_color=color,
+                            boxpoints='outliers'
+                        ))
+                
+                fig.update_layout(
+                    title="Distribución de Probabilidades",
+                    yaxis_title="Probabilidad",
+                    yaxis=dict(tickformat='.1%'),
+                    showlegend=True,
+                    height=400
+                )
+                
+                st.plotly_chart(fig, use_container_width=True)
+                
+            except Exception as e:
+                st.warning(f"⚠️ Error generando gráfico: {e}")
+                
+                # Fallback: mostrar estadísticas básicas
+                for i, col in enumerate(prob_cols):
+                    label = labels[i]
+                    st.metric(f"Promedio {label}", f"{prob_df[col].mean():.1%}")
+        
+        # Análisis adicional seguro
+        st.markdown("### 🔍 Análisis Detallado")
+        
+        try:
+            # Calcular favoritos sin usar max_probs.index problemático
+            favoritos_data = []
+            
+            for idx, row in prob_df.iterrows():
+                # Obtener probabilidades para esta fila
+                probs = [row[col] for col in prob_cols if col in row]
+                
+                if len(probs) >= 3:
+                    max_prob = max(probs)
+                    max_idx = probs.index(max_prob)
+                    resultado_favorito = ['Local', 'Empate', 'Visitante'][max_idx]
+                    
+                    match_info = {
+                        'Partido': idx + 1,
+                        'Favorito': resultado_favorito,
+                        'Probabilidad': f"{max_prob:.1%}"
+                    }
+                    
+                    # Agregar info de equipos si está disponible
+                    if 'home' in row:
+                        match_info['Local'] = row['home']
+                    if 'away' in row:
+                        match_info['Visitante'] = row['away']
+                    
+                    favoritos_data.append(match_info)
+            
+            if favoritos_data:
+                favoritos_df = pd.DataFrame(favoritos_data)
+                st.dataframe(favoritos_df, use_container_width=True)
             else:
-                st.dataframe(prob_df, use_container_width=True)
-        
-        with col2:
-            # Gráfico de distribución de probabilidades
-            fig = go.Figure()
-            
-            colors = ['#1f77b4', '#ff7f0e', '#2ca02c']
-            labels = ['Local', 'Empate', 'Visitante']
-            
-            for i, (col, label, color) in enumerate(zip(prob_cols, labels, colors)):
-                fig.add_trace(go.Box(
-                    y=prob_df[col], 
-                    name=label,
-                    marker_color=color,
-                    boxpoints='outliers'
-                ))
-            
-            fig.update_layout(
-                title="Distribución de Probabilidades por Resultado",
-                yaxis_title="Probabilidad",
-                yaxis=dict(tickformat='.1%'),
-                showlegend=True
-            )
-            
-            st.plotly_chart(fig, use_container_width=True)
-        
-        # Estadísticas detalladas
-        st.subheader("📊 Estadísticas Detalladas")
-        
-        stats_col1, stats_col2, stats_col3 = st.columns(3)
-        
-        with stats_col1:
-            st.markdown("**🏠 Local**")
-            st.metric("Promedio", f"{prob_df[prob_cols[0]].mean():.1%}")
-            st.metric("Máximo", f"{prob_df[prob_cols[0]].max():.1%}")
-            st.metric("Mínimo", f"{prob_df[prob_cols[0]].min():.1%}")
-        
-        with stats_col2:
-            st.markdown("**🤝 Empate**")
-            st.metric("Promedio", f"{prob_df[prob_cols[1]].mean():.1%}")
-            st.metric("Máximo", f"{prob_df[prob_cols[1]].max():.1%}")
-            st.metric("Mínimo", f"{prob_df[prob_cols[1]].min():.1%}")
-        
-        with stats_col3:
-            st.markdown("**✈️ Visitante**")
-            st.metric("Promedio", f"{prob_df[prob_cols[2]].mean():.1%}")
-            st.metric("Máximo", f"{prob_df[prob_cols[2]].max():.1%}")
-            st.metric("Mínimo", f"{prob_df[prob_cols[2]].min():.1%}")
-        
-        # Análisis de balance
-        st.subheader("⚖️ Análisis de Balance")
-        
-        # Calcular métricas de balance
-        max_probs = prob_df[prob_cols].max(axis=1)
-        balance_score = 1 - (max_probs - 1/3).abs().mean() * 3  # Score 0-1
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            st.metric("🎯 Score de Balance", f"{balance_score:.2f}")
-            st.caption("1.0 = Perfectamente balanceado, 0.0 = Muy sesgado")
-        
-        with col2:
-            favorites_count = (max_probs > 0.6).sum()
-            st.metric("🏆 Partidos con Favorito Claro", f"{favorites_count}/{len(prob_df)}")
-            st.caption("Probabilidad máxima > 60%")
-        
-        # Mostrar partidos más interesantes
-        st.subheader("🔍 Partidos Destacados")
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.markdown("**🏆 Favoritos más claros:**")
-            top_favorites = prob_df.nlargest(3, max_probs.index)
-            for _, row in top_favorites.iterrows():
-                max_prob = max(row[prob_cols])
-                result = prob_cols[np.argmax(row[prob_cols])]
-                st.info(f"Partido {row.get('match_no', 'N/A')}: {result.split('_')[-1]} ({max_prob:.1%})")
-        
-        with col2:
-            st.markdown("**⚖️ Más equilibrados:**")
-            equilibrium_scores = prob_df[prob_cols].std(axis=1)
-            most_balanced = prob_df.nsmallest(3, equilibrium_scores.index)
-            for _, row in most_balanced.iterrows():
-                probs_str = " / ".join([f"{row[col]:.1%}" for col in prob_cols])
-                st.info(f"Partido {row.get('match_no', 'N/A')}: {probs_str}")
+                st.info("No se pudo generar análisis de favoritos")
+                
+        except Exception as e:
+            st.warning(f"⚠️ Error en análisis detallado: {e}")
     
-    else:
-        st.error("❌ No se pudieron encontrar las columnas de probabilidades esperadas")
-        st.info(f"Columnas encontradas: {list(prob_df.columns)}")
-        st.info(f"Columnas esperadas: {prob_cols}")
-
+    except Exception as e:
+        st.error(f"❌ Error cargando probabilidades: {e}")
+        st.info("Verifica que el archivo tenga el formato correcto")
 
 def show_portfolio_metrics(jornada):
     """Mostrar métricas del portafolio"""
@@ -2090,71 +2096,456 @@ def show_portfolio_metrics(jornada):
     st.dataframe(portfolio_with_metrics, use_container_width=True)
 
 def show_detailed_analysis(jornada):
-    """Análisis detallado"""
+    """Análisis detallado completo - VERSIÓN CORREGIDA"""
     st.subheader(f"🔍 Análisis Detallado - Jornada {jornada}")
     
-    # Análisis comparativo
-    st.markdown("### 📊 Análisis Comparativo")
+    # === VALIDACIÓN INICIAL ===
+    required_files = {
+        'prob': f"data/processed/prob_draw_adjusted_{jornada}.csv",
+        'sim': f"data/processed/simulation_metrics_{jornada}.csv",
+        'portfolio': f"data/processed/portfolio_final_{jornada}.csv",
+        'features': f"data/processed/match_features_{jornada}.feather"
+    }
     
-    # Comparar con jornadas anteriores si existen
-    jornadas = get_available_jornadas()
-    if len(jornadas) > 1:
+    # Buscar archivos alternativos si los principales no existen
+    alt_files = {
+        'prob': [
+            f"data/processed/prob_final_{jornada}.csv",
+            f"data/processed/prob_blend_{jornada}.csv",
+            f"data/processed/prob_basic_{jornada}.csv",
+            "data/processed/prob_final.csv"
+        ],
+        'features': [
+            f"data/processed/match_features_{jornada}.csv",
+            f"data/processed/features_complete_{jornada}.csv"
+        ]
+    }
+    
+    # Verificar y encontrar archivos disponibles
+    available_files = {}
+    for key, main_file in required_files.items():
+        if Path(main_file).exists():
+            available_files[key] = main_file
+        elif key in alt_files:
+            for alt_file in alt_files[key]:
+                if Path(alt_file).exists():
+                    available_files[key] = alt_file
+                    break
+    
+    # Mostrar estado de archivos
+    st.markdown("### 📁 Estado de Archivos")
+    
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        if 'prob' in available_files:
+            st.success("✅ Probabilidades")
+        else:
+            st.error("❌ Probabilidades")
+    
+    with col2:
+        if 'sim' in available_files:
+            st.success("✅ Simulación")
+        else:
+            st.error("❌ Simulación")
+    
+    with col3:
+        if 'portfolio' in available_files:
+            st.success("✅ Portafolio")
+        else:
+            st.error("❌ Portafolio")
+    
+    with col4:
+        if 'features' in available_files:
+            st.success("✅ Features")
+        else:
+            st.error("❌ Features")
+    
+    # === ANÁLISIS COMPARATIVO ===
+    st.markdown("### 📊 Análisis Comparativo Histórico")
+    
+    # Obtener jornadas disponibles con validación robusta
+    jornadas_disponibles = get_available_jornadas()
+    
+    # Asegurar que la jornada actual esté en la lista
+    if str(jornada) not in jornadas_disponibles:
+        jornadas_disponibles.append(str(jornada))
+        jornadas_disponibles = sorted(jornadas_disponibles, key=lambda x: int(x), reverse=True)
+    
+    # Filtrar jornadas que realmente tienen datos
+    jornadas_con_datos = []
+    for j in jornadas_disponibles:
+        sim_file = f"data/processed/simulation_metrics_{j}.csv"
+        if Path(sim_file).exists():
+            jornadas_con_datos.append(j)
+    
+    if len(jornadas_con_datos) > 1:
+        # Configurar valores por defecto seguros
+        otras_jornadas = [j for j in jornadas_con_datos if j != str(jornada)]
+        
+        # Valor por defecto: primera jornada diferente a la actual, o lista vacía
+        default_comparacion = [otras_jornadas[0]] if otras_jornadas else []
+        
         jornadas_comparar = st.multiselect(
-            "Seleccionar jornadas para comparar",
-            [j for j in jornadas if j != jornada],
-            default=[jornadas[1]] if len(jornadas) > 1 else []
+            "🔍 Seleccionar jornadas para comparar:",
+            options=otras_jornadas,  # Solo jornadas diferentes a la actual
+            default=default_comparacion,  # Valor por defecto seguro
+            help="Selecciona hasta 3 jornadas para comparar métricas",
+            key=f"multiselect_comparacion_{jornada}"
         )
         
         if jornadas_comparar:
             comparison_data = []
             
-            # Jornada actual
-            sim_file = f"data/processed/simulation_metrics_{jornada}.csv"
-            if Path(sim_file).exists():
-                sim_df = pd.read_csv(sim_file)
-                comparison_data.append({
-                    'Jornada': jornada,
-                    'Pr[≥11]': sim_df['pr_11'].mean(),
-                    'Pr[≥10]': sim_df['pr_10'].mean(),
-                    'μ hits': sim_df['mu'].mean(),
-                    'σ hits': sim_df['sigma'].mean()
-                })
+            # Agregar jornada actual
+            if 'sim' in available_files:
+                try:
+                    sim_df_actual = pd.read_csv(available_files['sim'])
+                    comparison_data.append({
+                        'Jornada': str(jornada),
+                        'Pr[≥11]': sim_df_actual['pr_11'].mean(),
+                        'Pr[≥10]': sim_df_actual['pr_10'].mean(),
+                        'μ hits': sim_df_actual['mu'].mean(),
+                        'σ hits': sim_df_actual['sigma'].mean(),
+                        'Estado': '🎯 Actual'
+                    })
+                except Exception as e:
+                    st.warning(f"Error cargando datos de jornada actual: {e}")
             
-            # Jornadas a comparar
-            for j in jornadas_comparar:
+            # Agregar jornadas de comparación
+            for j in jornadas_comparar[:3]:  # Límite de 3 jornadas
                 sim_file_comp = f"data/processed/simulation_metrics_{j}.csv"
                 if Path(sim_file_comp).exists():
-                    sim_df_comp = pd.read_csv(sim_file_comp)
-                    comparison_data.append({
-                        'Jornada': j,
-                        'Pr[≥11]': sim_df_comp['pr_11'].mean(),
-                        'Pr[≥10]': sim_df_comp['pr_10'].mean(),
-                        'μ hits': sim_df_comp['mu'].mean(),
-                        'σ hits': sim_df_comp['sigma'].mean()
-                    })
+                    try:
+                        sim_df_comp = pd.read_csv(sim_file_comp)
+                        comparison_data.append({
+                            'Jornada': j,
+                            'Pr[≥11]': sim_df_comp['pr_11'].mean(),
+                            'Pr[≥10]': sim_df_comp['pr_10'].mean(),
+                            'μ hits': sim_df_comp['mu'].mean(),
+                            'σ hits': sim_df_comp['sigma'].mean(),
+                            'Estado': '📊 Comparación'
+                        })
+                    except Exception as e:
+                        st.warning(f"Error cargando datos de jornada {j}: {e}")
             
-            if comparison_data:
+            if len(comparison_data) > 1:
                 comp_df = pd.DataFrame(comparison_data)
                 
-                # Gráfico de comparación
-                fig = make_subplots(
-                    rows=2, cols=2,
-                    subplot_titles=['Pr[≥11]', 'Pr[≥10]', 'μ hits', 'σ hits']
+                # Tabla de comparación
+                st.dataframe(
+                    comp_df.style.format({
+                        'Pr[≥11]': '{:.2%}',
+                        'Pr[≥10]': '{:.2%}',
+                        'μ hits': '{:.2f}',
+                        'σ hits': '{:.2f}'
+                    }),
+                    use_container_width=True
                 )
                 
-                metrics = ['Pr[≥11]', 'Pr[≥10]', 'μ hits', 'σ hits']
-                positions = [(1,1), (1,2), (2,1), (2,2)]
+                # Gráficos de comparación
+                col1, col2 = st.columns(2)
                 
-                for metric, pos in zip(metrics, positions):
-                    fig.add_trace(
-                        go.Bar(x=comp_df['Jornada'], y=comp_df[metric], name=metric),
-                        row=pos[0], col=pos[1]
+                with col1:
+                    # Gráfico de barras de métricas principales
+                    fig_metrics = go.Figure()
+                    
+                    metrics = ['Pr[≥11]', 'Pr[≥10]', 'μ hits', 'σ hits']
+                    colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728']
+                    
+                    for i, metric in enumerate(metrics):
+                        fig_metrics.add_trace(go.Bar(
+                            name=metric,
+                            x=comp_df['Jornada'],
+                            y=comp_df[metric],
+                            marker_color=colors[i],
+                            text=comp_df[metric].apply(
+                                lambda x: f"{x:.1%}" if metric.startswith('Pr') else f"{x:.2f}"
+                            ),
+                            textposition='auto'
+                        ))
+                    
+                    fig_metrics.update_layout(
+                        title="📊 Comparación de Métricas por Jornada",
+                        xaxis_title="Jornada",
+                        yaxis_title="Valor",
+                        barmode='group',
+                        height=400
                     )
+                    
+                    st.plotly_chart(fig_metrics, use_container_width=True)
                 
-                fig.update_layout(height=600, showlegend=False)
-                st.plotly_chart(fig, use_container_width=True)
+                with col2:
+                    # Gráfico de evolución de Pr[≥11]
+                    fig_evolution = go.Figure()
+                    
+                    # Ordenar por jornada para mostrar evolución
+                    comp_df_sorted = comp_df.sort_values('Jornada')
+                    
+                    fig_evolution.add_trace(go.Scatter(
+                        x=comp_df_sorted['Jornada'],
+                        y=comp_df_sorted['Pr[≥11]'],
+                        mode='lines+markers',
+                        name='Pr[≥11]',
+                        line=dict(width=3),
+                        marker=dict(size=8)
+                    ))
+                    
+                    # Línea de referencia (objetivo)
+                    fig_evolution.add_hline(
+                        y=0.12, 
+                        line_dash="dash", 
+                        line_color="red",
+                        annotation_text="Objetivo: 12%"
+                    )
+                    
+                    fig_evolution.update_layout(
+                        title="📈 Evolución de Pr[≥11]",
+                        xaxis_title="Jornada",
+                        yaxis_title="Pr[≥11]",
+                        yaxis=dict(tickformat='.1%'),
+                        height=400
+                    )
+                    
+                    st.plotly_chart(fig_evolution, use_container_width=True)
                 
-                st.dataframe(comp_df, use_container_width=True)
+                # === ANÁLISIS DE MEJORA ===
+                st.markdown("### 🚀 Análisis de Mejora")
+                
+                if len(comparison_data) >= 2:
+                    actual_pr11 = comparison_data[0]['Pr[≥11]']  # Jornada actual
+                    prev_pr11 = comparison_data[1]['Pr[≥11]']    # Jornada anterior
+                    
+                    mejora = actual_pr11 - prev_pr11
+                    mejora_pct = (mejora / prev_pr11) * 100 if prev_pr11 > 0 else 0
+                    
+                    col1, col2, col3 = st.columns(3)
+                    
+                    with col1:
+                        if mejora > 0:
+                            st.success(f"📈 Mejora: +{mejora:.2%}")
+                        else:
+                            st.error(f"📉 Declive: {mejora:.2%}")
+                    
+                    with col2:
+                        st.metric(
+                            "Cambio Porcentual",
+                            f"{mejora_pct:+.1f}%",
+                            delta=f"{mejora:.3%}"
+                        )
+                    
+                    with col3:
+                        objetivo = 0.12
+                        distancia = objetivo - actual_pr11
+                        if distancia <= 0:
+                            st.success("🎯 ¡Objetivo alcanzado!")
+                        else:
+                            st.info(f"🎯 Faltan {distancia:.2%} para objetivo")
+            
+            else:
+                st.info("📊 No hay suficientes datos para comparación")
+        
+        else:
+            st.info("🔍 Selecciona jornadas para comparar en el selector de arriba")
+    
+    else:
+        st.info("📊 Se necesitan al menos 2 jornadas con datos para hacer comparaciones")
+        st.markdown("Ejecuta el pipeline en más jornadas para habilitar comparaciones históricas")
+    
+    # === ANÁLISIS DE CORRELACIONES ===
+    if 'portfolio' in available_files and 'sim' in available_files:
+        st.markdown("### 🔗 Análisis de Correlaciones")
+        
+        try:
+            portfolio_df = pd.read_csv(available_files['portfolio'])
+            sim_df = pd.read_csv(available_files['sim'])
+            
+            # Combinar datos
+            combined_df = portfolio_df.merge(sim_df, on='quiniela_id', how='inner')
+            
+            if len(combined_df) > 0:
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    # Correlación entre μ hits y σ hits
+                    fig_corr = go.Figure()
+                    
+                    fig_corr.add_trace(go.Scatter(
+                        x=combined_df['mu'],
+                        y=combined_df['sigma'],
+                        mode='markers',
+                        marker=dict(
+                            size=8,
+                            color=combined_df['pr_11'],
+                            colorscale='Viridis',
+                            showscale=True,
+                            colorbar=dict(title="Pr[≥11]")
+                        ),
+                        text=combined_df['quiniela_id'],
+                        hovertemplate='<b>%{text}</b><br>' +
+                                      'μ hits: %{x:.2f}<br>' +
+                                      'σ hits: %{y:.2f}<br>' +
+                                      'Pr[≥11]: %{marker.color:.2%}<extra></extra>'
+                    ))
+                    
+                    fig_corr.update_layout(
+                        title="🔗 Correlación μ vs σ (Color: Pr[≥11])",
+                        xaxis_title="μ hits esperados",
+                        yaxis_title="σ hits",
+                        height=400
+                    )
+                    
+                    st.plotly_chart(fig_corr, use_container_width=True)
+                
+                with col2:
+                    # Top y Bottom performers
+                    st.markdown("#### 🏆 Top Performers")
+                    
+                    top_performers = combined_df.nlargest(5, 'pr_11')[['quiniela_id', 'pr_11', 'mu']]
+                    top_performers['pr_11'] = top_performers['pr_11'].apply(lambda x: f"{x:.2%}")
+                    top_performers['mu'] = top_performers['mu'].apply(lambda x: f"{x:.2f}")
+                    
+                    st.dataframe(top_performers, use_container_width=True)
+                    
+                    st.markdown("#### 📉 Bottom Performers")
+                    
+                    bottom_performers = combined_df.nsmallest(3, 'pr_11')[['quiniela_id', 'pr_11', 'mu']]
+                    bottom_performers['pr_11'] = bottom_performers['pr_11'].apply(lambda x: f"{x:.2%}")
+                    bottom_performers['mu'] = bottom_performers['mu'].apply(lambda x: f"{x:.2f}")
+                    
+                    st.dataframe(bottom_performers, use_container_width=True)
+        
+        except Exception as e:
+            st.warning(f"Error en análisis de correlaciones: {e}")
+    
+    # === ANÁLISIS DE FEATURES ===
+    if 'features' in available_files:
+        st.markdown("### 🧠 Análisis de Features")
+        
+        try:
+            if available_files['features'].endswith('.feather'):
+                features_df = pd.read_feather(available_files['features'])
+            else:
+                features_df = pd.read_csv(available_files['features'])
+            
+            # Análisis de features más importantes
+            numeric_features = [
+                'delta_forma', 'h2h_ratio', 'elo_diff', 'inj_weight',
+                'value_diff', 'p_raw_L', 'p_raw_E', 'p_raw_V'
+            ]
+            
+            available_numeric = [f for f in numeric_features if f in features_df.columns]
+            
+            if available_numeric:
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    # Distribución de features clave
+                    feature_to_plot = st.selectbox(
+                        "Seleccionar feature para análisis:",
+                        available_numeric,
+                        key=f"feature_selector_{jornada}"
+                    )
+                    
+                    fig_feature = go.Figure()
+                    
+                    fig_feature.add_trace(go.Histogram(
+                        x=features_df[feature_to_plot],
+                        nbinsx=20,
+                        name=feature_to_plot
+                    ))
+                    
+                    fig_feature.update_layout(
+                        title=f"📊 Distribución de {feature_to_plot}",
+                        xaxis_title=feature_to_plot,
+                        yaxis_title="Frecuencia",
+                        height=300
+                    )
+                    
+                    st.plotly_chart(fig_feature, use_container_width=True)
+                
+                with col2:
+                    # Estadísticas de features
+                    st.markdown("#### 📈 Estadísticas de Features")
+                    
+                    feature_stats = features_df[available_numeric].describe()
+                    st.dataframe(feature_stats.round(3), use_container_width=True)
+            
+            else:
+                st.info("No se encontraron features numéricas para analizar")
+        
+        except Exception as e:
+            st.warning(f"Error en análisis de features: {e}")
+    
+    # === RECOMENDACIONES ===
+    st.markdown("### 💡 Recomendaciones")
+    
+    recommendations = []
+    
+    # Verificar archivos faltantes
+    missing_files = len(required_files) - len(available_files)
+    if missing_files > 0:
+        recommendations.append(f"📁 Ejecutar pipeline completo - faltan {missing_files} archivos")
+    
+    # Verificar rendimiento
+    if 'sim' in available_files:
+        try:
+            sim_df = pd.read_csv(available_files['sim'])
+            avg_pr11 = sim_df['pr_11'].mean()
+            
+            if avg_pr11 < 0.10:
+                recommendations.append("📉 Pr[≥11] por debajo del 10% - considerar ajustar parámetros")
+            elif avg_pr11 > 0.15:
+                recommendations.append("🚀 Excelente rendimiento - mantener estrategia actual")
+            else:
+                recommendations.append("📊 Rendimiento dentro del rango esperado")
+        except:
+            pass
+    
+    # Verificar diversidad del portafolio
+    if 'portfolio' in available_files:
+        try:
+            portfolio_df = pd.read_csv(available_files['portfolio'])
+            if len(portfolio_df) < 25:
+                recommendations.append("⚡ Considerar generar más quinielas para mayor diversidad")
+            elif len(portfolio_df) > 40:
+                recommendations.append("⚖️ Muchas quinielas - evaluar costo vs beneficio")
+        except:
+            pass
+    
+    # Mostrar recomendaciones
+    if recommendations:
+        for rec in recommendations:
+            st.info(rec)
+    else:
+        st.success("✅ No hay recomendaciones específicas - el sistema está funcionando bien")
+    
+    # === EXPORTAR ANÁLISIS ===
+    st.markdown("### 📄 Exportar Análisis")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        if st.button("📊 Generar Reporte PDF", key=f"pdf_report_{jornada}"):
+            st.info("🚧 Función de exportación PDF en desarrollo")
+    
+    with col2:
+        if st.button("📈 Exportar Datos CSV", key=f"csv_export_{jornada}"):
+            if 'sim' in available_files:
+                sim_df = pd.read_csv(available_files['sim'])
+                csv = sim_df.to_csv(index=False)
+                st.download_button(
+                    "⬇️ Descargar métricas de simulación",
+                    csv,
+                    f"analisis_detallado_{jornada}.csv",
+                    "text/csv"
+                )
+            else:
+                st.warning("No hay datos de simulación para exportar")
+    
+    with col3:
+        if st.button("🔗 Compartir Análisis", key=f"share_analysis_{jornada}"):
+            st.info("🚧 Función de compartir en desarrollo")
 
 def optimization_section():
     """Sección de optimización rápida"""
@@ -2408,7 +2799,7 @@ def exploration_section():
                 title="Evolución de Pr[≥11]",
                 markers=True
             )
-            fig.update_yaxis(tickformat='.1%')
+            fig.update_yaxes(tickformat='.1%')
             st.plotly_chart(fig, use_container_width=True)
         
         with col2:
@@ -2421,7 +2812,7 @@ def exploration_section():
                 markers=True
             )
             fig.add_hline(y=0, line_dash="dash", line_color="red")
-            fig.update_yaxis(ticksuffix="%")
+            fig.update_yaxes(ticksuffix="%")
             st.plotly_chart(fig, use_container_width=True)
         
         # Estadísticas generales
@@ -2544,7 +2935,7 @@ def check_directory_structure():
     st.success("✅ Estructura de directorios verificada")
 
 def main():
-    """Función principal de la aplicación"""
+    """ACTUALIZAR la función main para incluir templates"""
     load_custom_css()
     init_session_state()
     
@@ -2553,9 +2944,7 @@ def main():
     
     # Contenido principal según el modo
     if mode == "🚀 Pipeline Completo":
-        # Verificar si hay datos para procesar
         has_data = upload_data_section()
-        
         if has_data or st.session_state.current_jornada:
             st.markdown("---")
             run_pipeline_section()
@@ -2572,12 +2961,89 @@ def main():
     elif mode == "🔍 Explorar Resultados":
         exploration_section()
     
+    elif mode == "📋 Templates de Archivos":  # ← NUEVA SECCIÓN
+        templates_section()
+    
     elif mode == "⚙️ Configuración":
         configuration_section()
     
     # Footer
     st.markdown("---")
     st.markdown("🔢 **Progol Engine** - Sistema Integral de Optimización de Quinielas")
+
+def templates_section():
+    """Sección de templates - AGREGAR AL FINAL DEL ARCHIVO"""
+    st.title("📋 Templates de Archivos")
+    st.markdown("Genera templates exactos para todos los tipos de archivos")
+    
+    st.info("""
+    🚧 **Función de Templates**
+    
+    Para usar los templates completos, necesitas:
+    1. Crear el archivo `src/utils/template_generator.py` con el código que proporcioné
+    2. O usar el archivo `streamlit_app.py` principal en lugar de `dashboard.py`
+    
+    **Workaround temporal:**
+    Puedes descargar templates básicos aquí:
+    """)
+    
+    # Template básico de Progol para predicción
+    if st.button("📥 Generar Template Progol PREDICCIÓN"):
+        template_data = {
+            'concurso_id': [2287] * 14,
+            'fecha': ['2025-01-15'] * 14,
+            'match_no': list(range(1, 15)),
+            'liga': ['Liga MX'] * 14,
+            'home': [f'Equipo_Local_{i}' for i in range(1, 15)],
+            'away': [f'Equipo_Visitante_{i}' for i in range(1, 15)]
+        }
+        
+        df_template = pd.DataFrame(template_data)
+        csv = df_template.to_csv(index=False)
+        
+        st.download_button(
+            "📥 Descargar Template Progol",
+            csv,
+            "progol_2287_PREDICCION.csv",
+            "text/csv"
+        )
+        
+        st.dataframe(df_template)
+    
+    # Template básico de Odds
+    if st.button("📥 Generar Template Odds"):
+        import random
+        
+        odds_data = {
+            'concurso_id': [2287] * 14,
+            'match_no': list(range(1, 15)),
+            'fecha': ['2025-01-15'] * 14,
+            'home': [f'Equipo_Local_{i}' for i in range(1, 15)],
+            'away': [f'Equipo_Visitante_{i}' for i in range(1, 15)],
+            'odds_L': [round(random.uniform(1.5, 4.0), 2) for _ in range(14)],
+            'odds_E': [round(random.uniform(2.8, 3.8), 2) for _ in range(14)],
+            'odds_V': [round(random.uniform(1.8, 5.0), 2) for _ in range(14)]
+        }
+        
+        df_odds = pd.DataFrame(odds_data)
+        csv = df_odds.to_csv(index=False)
+        
+        st.download_button(
+            "📥 Descargar Template Odds",
+            csv,
+            "odds_2287.csv",
+            "text/csv"
+        )
+        
+        st.dataframe(df_odds)
+    
+    st.markdown("""
+    ### 📚 Instrucciones:
+    1. Descarga los templates
+    2. Modifica con tus datos reales
+    3. Guarda en `data/raw/`
+    4. Ejecuta el pipeline
+    """)
 
 if __name__ == "__main__":
     main()
