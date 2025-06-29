@@ -1,0 +1,15 @@
+concurso_id,fecha,match_no,liga,home,away,l_g,a_g,resultado,premio_1,premio_2
+2283,2024-12-15,1,Liga MX,Equipo_Local_1,Equipo_Visitante_1,3,2,E,0,0
+2283,2024-12-15,2,Liga MX,Equipo_Local_2,Equipo_Visitante_2,3,0,V,0,0
+2283,2024-12-15,3,Liga MX,Equipo_Local_3,Equipo_Visitante_3,1,1,V,0,0
+2283,2024-12-15,4,Liga MX,Equipo_Local_4,Equipo_Visitante_4,2,2,V,0,0
+2283,2024-12-15,5,Liga MX,Equipo_Local_5,Equipo_Visitante_5,0,2,E,0,0
+2283,2024-12-15,6,Liga MX,Equipo_Local_6,Equipo_Visitante_6,1,0,E,0,0
+2283,2024-12-15,7,Liga MX,Equipo_Local_7,Equipo_Visitante_7,1,2,E,0,0
+2283,2024-12-15,8,Liga MX,Equipo_Local_8,Equipo_Visitante_8,0,2,V,0,0
+2283,2024-12-15,9,Liga MX,Equipo_Local_9,Equipo_Visitante_9,0,2,V,0,0
+2283,2024-12-15,10,Liga MX,Equipo_Local_10,Equipo_Visitante_10,0,2,L,0,0
+2283,2024-12-15,11,Liga MX,Equipo_Local_11,Equipo_Visitante_11,0,3,E,0,0
+2283,2024-12-15,12,Liga MX,Equipo_Local_12,Equipo_Visitante_12,1,2,V,0,0
+2283,2024-12-15,13,Liga MX,Equipo_Local_13,Equipo_Visitante_13,3,3,L,0,0
+2283,2024-12-15,14,Liga MX,Equipo_Local_14,Equipo_Visitante_14,3,3,V,0,0
