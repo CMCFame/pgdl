@@ -1,0 +1,11 @@
+{
+  "portfolio_pr11": 0.024413093046565693,
+  "media_pr11": 0.0008233333333333336,
+  "mejor_quiniela": "Q12",
+  "mejor_pr11": 0.0026,
+  "media_mu_hits": 4.8619166666666676,
+  "media_roi": 3.6881666666666666,
+  "n_quinielas": 30,
+  "n_simulaciones": 10000,
+  "prob_tipica_acierto": 0.34734948283346506
+}

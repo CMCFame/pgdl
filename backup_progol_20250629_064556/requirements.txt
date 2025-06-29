@@ -1,10 +1,3 @@
-# === NUEVAS DEPENDENCIAS PROGOL ENGINE V2 ===
-PyMuPDF>=1.23.0  # Procesamiento avanzado de PDFs
-pydantic>=2.0.0  # Validación de datos
-joblib>=1.3.0    # Procesamiento paralelo
-statsmodels>=0.14.0  # Estadísticas avanzadas
-
-# === DEPENDENCIAS ORIGINALES ===
 # ============================================================================
 # PROGOL ENGINE V2 - DEPENDENCIAS ACTUALIZADAS
 # Sistema Avanzado de Optimización de Quinielas (14 regulares + 7 revancha)

@@ -17,7 +17,6 @@ import time
 import zipfile
 import io
 import base64
-import plotly
 
 # Agregar src al path para imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
@@ -419,9 +418,9 @@ def run_pipeline_section():
     # Pipeline steps
     pipeline_steps = [
         ("ETL", "Procesamiento de datos"),
-        ("Modeling", "Cálculo de probabilidades"),
-        ("Optimization", "Generación de quinielas"),
-        ("Simulation", "Cálculo de métricas")
+        ("Modelado", "Cálculo de probabilidades"),
+        ("Optimización", "Generación de quinielas"),
+        ("Simulación", "Cálculo de métricas")
     ]
     
     col1, col2 = st.columns([2, 1])
@@ -1257,7 +1256,6 @@ def generate_quick_optimization_results(n_quinielas, estrategia, incluir_revanch
         }
         
         # Generar predicciones basadas en estrategia
-        signos = []
         for p in range(total_partidos):
             if estrategia == "Conservadora":
                 probs = [0.45, 0.35, 0.20]  # Más locales
@@ -1268,25 +1266,16 @@ def generate_quick_optimization_results(n_quinielas, estrategia, incluir_revanch
             
             sign = np.random.choice(['L', 'E', 'V'], p=probs)
             quiniela[f'P{p+1}'] = sign
-            signos.append(sign)
-        
-        # Calcular conteos de signos
-        quiniela['l_count'] = signos.count('L')
-        quiniela['e_count'] = signos.count('E')
-        quiniela['v_count'] = signos.count('V')
         
         portfolio_data.append(quiniela)
     
     df_portfolio = pd.DataFrame(portfolio_data)
     
     # Guardar resultados
-    output_path = f"data/processed/portfolio_final_{jornada}.csv"
+    output_path = f"data/processed/portfolio_quick_{jornada}.csv"
     df_portfolio.to_csv(output_path, index=False)
     
-    # Actualizar session state
     st.session_state.generated_outputs['Optimización Rápida'] = output_path
-    st.session_state.pipeline_status['optimization'] = True
-    st.session_state.current_jornada = jornada
 
 def configuration_section():
     """Sección de configuración mejorada"""
@@ -1358,7 +1347,7 @@ def configuration_section():
         'Streamlit': st.__version__,
         'Pandas': pd.__version__,
         'NumPy': np.__version__,
-        'Plotly': plotly.__version__,
+        'Plotly': px.__version__,
         'Directorio de Trabajo': os.getcwd()
     }
     

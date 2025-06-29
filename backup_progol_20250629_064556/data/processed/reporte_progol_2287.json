@@ -1,0 +1,64 @@
+{
+  "tipo_archivo": "progol_prediccion",
+  "total_registros": 14,
+  "total_columnas": 7,
+  "columnas": [
+    "concurso_id",
+    "fecha",
+    "match_no",
+    "liga",
+    "home",
+    "away",
+    "match_id"
+  ],
+  "jornada_detectada": 2287,
+  "fecha_rango": {
+    "desde": "2025-06-28 00:00:00",
+    "hasta": "2025-06-30 00:00:00",
+    "fechas_unicas": 3
+  },
+  "equipos_unicos": {
+    "total": 28,
+    "lista": [
+      "Arabia Saudita",
+      "Avispa Fukuoka",
+      "Bayern Munich",
+      "Botafogo",
+      "Chapecoense",
+      "Columbus Crew",
+      "Costa Rica",
+      "Emelec",
+      "FC Cincinnati",
+      "Flamengo",
+      "Fluminense",
+      "Goias",
+      "Independiente Medellin",
+      "Inter",
+      "Macara",
+      "Malmo",
+      "Mexico",
+      "Minnesota United",
+      "Mjallby",
+      "New York Red Bulls",
+      "Orlando City",
+      "Palmeiras",
+      "Philadelphia Union",
+      "Real Salt Lake",
+      "Santa Fe",
+      "Sporting Kansas City",
+      "USA",
+      "Vissel Kobe"
+    ]
+  },
+  "ligas_detectadas": {
+    "MLS": 4,
+    "Mundial de Clubes": 3,
+    "Copa Oro": 2,
+    "Liga Dimayor": 1,
+    "Serie A Ecuador": 1,
+    "J1 League": 1,
+    "Serie B Brasil": 1,
+    "Allsvenskan": 1
+  },
+  "problemas": []
+}
