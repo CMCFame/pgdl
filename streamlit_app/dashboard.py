@@ -18,9 +18,17 @@ import zipfile
 import io
 import base64
 import plotly
+import logging  # ← ESTE ERA EL QUE FALTABA
 
 # Agregar src al path para imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+
+try:
+    from src.utils.multiple_quinielas_ui import multiple_quinielas_section
+    MULTIPLE_AVAILABLE = True
+except ImportError:
+    MULTIPLE_AVAILABLE = False
+    logging.warning("Módulo de quinielas múltiples no disponible")
 
 # Configuración de página
 st.set_page_config(
@@ -202,16 +210,24 @@ def sidebar_navigation():
         
         # Navegación principal
         st.subheader("🧭 Navegación")
+        
+        # Preparar opciones de navegación
+        navigation_options = [
+            "🚀 Pipeline Completo",
+            "📊 Análisis de Datos", 
+            "🎯 Optimización Rápida",
+            "📈 Métricas del Portafolio",
+            "📁 Gestión de Archivos",
+            "⚙️ Configuración"
+        ]
+        
+        # Agregar quinielas múltiples si está disponible (NUEVO)
+        if MULTIPLE_AVAILABLE:
+            navigation_options.insert(-1, "🎯 Quinielas Múltiples")  # Antes de Configuración
+        
         mode = st.radio(
             "Selecciona una sección:",
-            [
-                "🚀 Pipeline Completo",
-                "📊 Análisis de Datos", 
-                "🎯 Optimización Rápida",
-                "📈 Métricas del Portafolio",
-                "📁 Gestión de Archivos",
-                "⚙️ Configuración"
-            ]
+            navigation_options
         )
         
         st.markdown("---")
@@ -1414,6 +1430,21 @@ def main():
             show_output_files(st.session_state.current_jornada)
         else:
             st.warning("⚠️ Selecciona una jornada para gestionar archivos")
+    
+    elif mode == "🎯 Quinielas Múltiples":
+        if MULTIPLE_AVAILABLE:
+            multiple_quinielas_section()
+        else:
+            st.error("🚫 Funcionalidad de Quinielas Múltiples no disponible")
+            st.info("""
+            📋 **Para habilitar esta función:**
+            
+            1. Crea el archivo `src/utils/multiple_quinielas_generator.py`
+            2. Crea el archivo `src/utils/multiple_quinielas_ui.py`  
+            3. Reinicia la aplicación
+            
+            💡 Alternativamente, usa: `python install_multiple_quinielas.py`
+            """)
     
     elif mode == "⚙️ Configuración":
         configuration_section()
