@@ -1,8 +1,8 @@
 {
-  "timestamp": "2025-07-03T12:33:33.626291",
+  "timestamp": "2025-07-03T17:34:56.115997",
   "configuracion": {
     "dobles": 2,
-    "triples": 2,
+    "triples": 1,
     "valida": true,
     "mensaje": "✅ Configuración válida",
     "estrategia_dobles": "Automática (IA decide)",
@@ -11,10 +11,10 @@
   },
   "resumen": {
     "sencillos": 18,
-    "dobles": 1,
-    "triples": 2,
-    "combinaciones_totales": 18,
-    "costo_total": 270.0
+    "dobles": 2,
+    "triples": 1,
+    "combinaciones_totales": 12,
+    "costo_total": 180.0
   },
   "partidos": [
     {
@@ -35,11 +35,10 @@
     {
       "numero": 2,
       "opciones": [
-        "L",
         "E",
         "V"
       ],
-      "tipo": "triple",
+      "tipo": "doble",
       "clasificacion": "TendenciaX",
       "probabilidades": {
         "L": 0.33,
