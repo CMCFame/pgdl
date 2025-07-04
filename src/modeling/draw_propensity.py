@@ -249,20 +249,64 @@ def proyectar_rangos_globales(df_adjusted, rangos_target=None):
     return df_projected
 
 def marcar_draw_propensity_flags(df_final):
-    """Marcar partidos que fueron afectados por la regla de empates"""
+    """
+    Marcar partidos con draw propensity - VERSIÓN MÁS SENSIBLE
+    
+    Criterios ajustados para detectar más casos de empate probable:
+    1. Empate relativamente alto (> 28% en lugar de 32%)
+    2. O empate competitivo (diferencia con máximo < 15%)
+    3. O partidos muy cerrados (diferencia L-V < 12%)
+    """
     df_flags = df_final.copy()
     
-    # Flag para partidos con alta tendencia al empate
+    # Calcular métricas auxiliares
+    max_prob = df_flags[['p_final_L', 'p_final_E', 'p_final_V']].max(axis=1)
+    diff_to_empate = max_prob - df_flags['p_final_E']
+    diff_lv = abs(df_flags['p_final_L'] - df_flags['p_final_V'])
+    
+    # CRITERIOS MÁS SENSIBLES:
+    
+    # Criterio 1: Empate alto (>28%)
+    criterio_empate_alto = df_flags['p_final_E'] > 0.28
+    
+    # Criterio 2: Empate competitivo (diferencia con máximo < 15%)
+    criterio_empate_competitivo = diff_to_empate < 0.15
+    
+    # Criterio 3: Partidos muy cerrados (L vs V < 12%)
+    criterio_cerrado = diff_lv < 0.12
+    
+    # Criterio 4: Empate es top-2 resultado más probable
+    sorted_probs = df_flags[['p_final_L', 'p_final_E', 'p_final_V']].apply(
+        lambda row: sorted(row, reverse=True), axis=1
+    )
+    criterio_top2 = df_flags['p_final_E'] >= sorted_probs.apply(lambda x: x[1])
+    
+    # COMBINACIÓN: cualquiera de los criterios
     df_flags['draw_propensity_flag'] = (
-        (df_flags['p_final_E'] > 0.32) & 
-        (df_flags['p_final_E'] > df_flags['p_final_L']) & 
-        (df_flags['p_final_E'] > df_flags['p_final_V'])
+        criterio_empate_alto | 
+        (criterio_empate_competitivo & criterio_top2) |
+        (criterio_cerrado & (df_flags['p_final_E'] > 0.25))
     )
     
     n_flags = df_flags['draw_propensity_flag'].sum()
-    logger.info(f"Marcados {n_flags} partidos con draw_propensity_flag")
+    
+    # Log de diagnóstico
+    print(f"=== DIAGNÓSTICO DRAW PROPENSITY ===")
+    print(f"Partidos con empate > 28%: {criterio_empate_alto.sum()}")
+    print(f"Partidos con empate competitivo: {criterio_empate_competitivo.sum()}")
+    print(f"Partidos cerrados (L-V < 12%): {criterio_cerrado.sum()}")
+    print(f"Partidos con empate top-2: {criterio_top2.sum()}")
+    print(f"TOTAL marcados con draw_propensity_flag: {n_flags}")
+    
+    if n_flags > 0:
+        print("\nPartidos marcados:")
+        marcados = df_flags[df_flags['draw_propensity_flag']]
+        for idx, row in marcados.iterrows():
+            print(f"Partido {row.get('partido', idx+1)}: "
+                  f"L={row['p_final_L']:.3f}, E={row['p_final_E']:.3f}, V={row['p_final_V']:.3f}")
     
     return df_flags
+
 
 def guardar_prob_draw(df_final, output_path=None):
     """Guardar probabilidades finales ajustadas por draw propensity"""
