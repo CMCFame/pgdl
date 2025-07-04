@@ -1,0 +1,300 @@
+{
+  "timestamp": "2025-07-03T20:56:42.080121",
+  "configuracion": {
+    "dobles": 2,
+    "triples": 2,
+    "valida": true,
+    "mensaje": "✅ Configuración válida",
+    "estrategia_dobles": "Automática (IA decide)",
+    "estrategia_triples": "Automática (IA decide)",
+    "overrides": null
+  },
+  "resumen": {
+    "sencillos": 17,
+    "dobles": 2,
+    "triples": 2,
+    "combinaciones_totales": 36,
+    "costo_total": 540.0
+  },
+  "partidos": [
+    {
+      "numero": 1,
+      "opciones": [
+        "L",
+        "E",
+        "V"
+      ],
+      "tipo": "triple",
+      "clasificacion": "Divisor",
+      "probabilidades": {
+        "L": 0.5245,
+        "E": 0.2782,
+        "V": 0.1972
+      }
+    },
+    {
+      "numero": 2,
+      "opciones": [
+        "L",
+        "E",
+        "V"
+      ],
+      "tipo": "triple",
+      "clasificacion": "Divisor",
+      "probabilidades": {
+        "L": 0.4031,
+        "E": 0.2938,
+        "V": 0.303
+      }
+    },
+    {
+      "numero": 3,
+      "opciones": [
+        "E",
+        "L"
+      ],
+      "tipo": "doble",
+      "clasificacion": "Divisor",
+      "probabilidades": {
+        "L": 0.4366,
+        "E": 0.2163,
+        "V": 0.347
+      }
+    },
+    {
+      "numero": 4,
+      "opciones": [
+        "L"
+      ],
+      "tipo": "sencillo",
+      "clasificacion": "Divisor",
+      "probabilidades": {
+        "L": 0.4172,
+        "E": 0.2474,
+        "V": 0.3354
+      }
+    },
+    {
+      "numero": 5,
+      "opciones": [
+        "L"
+      ],
+      "tipo": "sencillo",
+      "clasificacion": "TendenciaX",
+      "probabilidades": {
+        "L": 0.3945,
+        "E": 0.3149,
+        "V": 0.2906
+      }
+    },
+    {
+      "numero": 6,
+      "opciones": [
+        "V"
+      ],
+      "tipo": "sencillo",
+      "clasificacion": "Divisor",
+      "probabilidades": {
+        "L": 0.2718,
+        "E": 0.225,
+        "V": 0.5032
+      }
+    },
+    {
+      "numero": 7,
+      "opciones": [
+        "L"
+      ],
+      "tipo": "sencillo",
+      "clasificacion": "Divisor",
+      "probabilidades": {
+        "L": 0.4644,
+        "E": 0.2929,
+        "V": 0.2427
+      }
+    },
+    {
+      "numero": 8,
+      "opciones": [
+        "L"
+      ],
+      "tipo": "sencillo",
+      "clasificacion": "Divisor",
+      "probabilidades": {
+        "L": 0.4518,
+        "E": 0.2164,
+        "V": 0.3318
+      }
+    },
+    {
+      "numero": 9,
+      "opciones": [
+        "V"
+      ],
+      "tipo": "sencillo",
+      "clasificacion": "Divisor",
+      "probabilidades": {
+        "L": 0.3104,
+        "E": 0.2315,
+        "V": 0.4581
+      }
+    },
+    {
+      "numero": 10,
+      "opciones": [
+        "V"
+      ],
+      "tipo": "sencillo",
+      "clasificacion": "TendenciaX",
+      "probabilidades": {
+        "L": 0.3306,
+        "E": 0.3269,
+        "V": 0.3425
+      }
+    },
+    {
+      "numero": 11,
+      "opciones": [
+        "V"
+      ],
+      "tipo": "sencillo",
+      "clasificacion": "TendenciaX",
+      "probabilidades": {
+        "L": 0.3062,
+        "E": 0.3195,
+        "V": 0.3743
+      }
+    },
+    {
+      "numero": 12,
+      "opciones": [
+        "L"
+      ],
+      "tipo": "sencillo",
+      "clasificacion": "Divisor",
+      "probabilidades": {
+        "L": 0.4289,
+        "E": 0.341,
+        "V": 0.2302
+      }
+    },
+    {
+      "numero": 13,
+      "opciones": [
+        "V"
+      ],
+      "tipo": "sencillo",
+      "clasificacion": "Divisor",
+      "probabilidades": {
+        "L": 0.2848,
+        "E": 0.261,
+        "V": 0.4542
+      }
+    },
+    {
+      "numero": 14,
+      "opciones": [
+        "V"
+      ],
+      "tipo": "sencillo",
+      "clasificacion": "Divisor",
+      "probabilidades": {
+        "L": 0.277,
+        "E": 0.2353,
+        "V": 0.4877
+      }
+    },
+    {
+      "numero": 15,
+      "opciones": [
+        "L",
+        "V"
+      ],
+      "tipo": "doble",
+      "clasificacion": "Divisor",
+      "probabilidades": {
+        "L": 0.3955,
+        "E": 0.2012,
+        "V": 0.4034
+      }
+    },
+    {
+      "numero": 16,
+      "opciones": [
+        "L"
+      ],
+      "tipo": "sencillo",
+      "clasificacion": "Divisor",
+      "probabilidades": {
+        "L": 0.4586,
+        "E": 0.2241,
+        "V": 0.3173
+      }
+    },
+    {
+      "numero": 17,
+      "opciones": [
+        "L"
+      ],
+      "tipo": "sencillo",
+      "clasificacion": "Divisor",
+      "probabilidades": {
+        "L": 0.465,
+        "E": 0.2767,
+        "V": 0.2583
+      }
+    },
+    {
+      "numero": 18,
+      "opciones": [
+        "L"
+      ],
+      "tipo": "sencillo",
+      "clasificacion": "Divisor",
+      "probabilidades": {
+        "L": 0.5178,
+        "E": 0.2751,
+        "V": 0.207
+      }
+    },
+    {
+      "numero": 19,
+      "opciones": [
+        "V"
+      ],
+      "tipo": "sencillo",
+      "clasificacion": "TendenciaX",
+      "probabilidades": {
+        "L": 0.2957,
+        "E": 0.305,
+        "V": 0.3993
+      }
+    },
+    {
+      "numero": 20,
+      "opciones": [
+        "L"
+      ],
+      "tipo": "sencillo",
+      "clasificacion": "Divisor",
+      "probabilidades": {
+        "L": 0.5184,
+        "E": 0.2421,
+        "V": 0.2396
+      }
+    },
+    {
+      "numero": 21,
+      "opciones": [
+        "V"
+      ],
+      "tipo": "sencillo",
+      "clasificacion": "Neutro",
+      "probabilidades": {
+        "L": 0.3496,
+        "E": 0.2958,
+        "V": 0.3546
+      }
+    }
+  ]
+}
